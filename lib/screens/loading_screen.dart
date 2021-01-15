@@ -2,7 +2,6 @@ import 'package:barber_shop_admin/screens/navigation_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:barber_shop_admin/screens/login_screen.dart';
-import 'package:barber_shop_admin/screens/home_screen.dart';
 
 class LoadingScreen extends StatefulWidget {
   static const id = 'loading page';
@@ -21,8 +20,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
   String uid;
 
   /* Gets the current users uid when app is opened and assigns it to uid var
-  If user has logged out the value will be equal to null
-   */
+  If user has logged out the value will be equal to null*/
   void assignUser() async {
     try {
       uid = _auth.currentUser.uid;

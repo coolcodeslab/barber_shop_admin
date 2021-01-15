@@ -1,9 +1,7 @@
-import 'package:barber_shop_admin/contants.dart';
+import 'package:barber_shop_admin/constants.dart';
 import 'package:barber_shop_admin/screens/login_screen.dart';
-import 'package:barber_shop_admin/screens/settings_screen.dart';
 import 'package:barber_shop_admin/screens/edit_service_screen.dart';
 import 'package:barber_shop_admin/screens/item_screen.dart';
-import 'package:barber_shop_admin/screens/navigation_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -22,6 +20,12 @@ class _HomeScreenState extends State<HomeScreen> {
   final _fireStore = FirebaseFirestore.instance;
   final _auth = FirebaseAuth.instance;
 
+  //Logs out user when logout button pressed in drawer
+  void onTapLogOut() {
+    _auth.signOut();
+    pushNewScreen(context, screen: LoginScreen(), withNavBar: false);
+  }
+
   /*Passes the relevant sections that should be displayed in the tab bar
   and the heading
 
@@ -35,7 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => ItemScreen(
-          title: 'get started',
+          title: 'Get started',
           section1: 'all',
           section2: 'haircut',
           section3: 'beard',
@@ -52,42 +56,14 @@ class _HomeScreenState extends State<HomeScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => ItemScreen(
-          title: 'products',
-          section1: 'sec1',
-          section2: 'sec2',
-          section3: 'sec5',
-          section4: 'sec4',
+          title: 'Products',
+          section1: 'Essentials',
+          section2: 'Accessories',
+          section3: 'Men',
+          section4: 'Women',
         ),
       ),
     );
-  }
-
-  //Editing services
-  void onTapEdit() {
-    Navigator.pop(context);
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EditServiceScreen(
-          addService: true,
-        ),
-      ),
-    );
-  }
-
-  //Adding services
-  void onTapAddService() {
-    Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (context) => EditServiceScreen(addService: true)));
-  }
-
-  //Deleting services
-  void onTapDelete({String docId}) async {
-    print('deleting');
-    await _fireStore.collection('services').doc(docId).delete();
-    print('done');
   }
 
   /*When service container is tapped a dialog box pops up with the name
@@ -95,7 +71,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   This zooms in the relevant service and gives the user a better view*/
   void onTapServiceContainer(
-      {String name, String description, String price, String docId}) {
+      {String name,
+      String description,
+      String price,
+      String docId,
+      String url}) {
     //Popup Dialog box
     showGeneralDialog(
       context: context,
@@ -109,9 +89,10 @@ class _HomeScreenState extends State<HomeScreen> {
             title: name,
             description: description,
             price: price,
+            url: url,
             onTapDelete: () {
               print('enable delete');
-//              onTapDelete(docId: docId);
+              onTapDelete(docId: docId);
               Navigator.pop(context);
             },
             onTapEdit: () {
@@ -119,12 +100,13 @@ class _HomeScreenState extends State<HomeScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => EditServiceScreen(
+                  builder: (context) => EditOrAddScreen(
                     description: description,
                     name: name,
                     price: price,
                     docId: docId,
                     addService: false,
+                    imageUrl: url,
                   ),
                 ),
               );
@@ -135,9 +117,32 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void onTapLogOut() {
-    _auth.signOut();
-    pushNewScreen(context, screen: LoginScreen(), withNavBar: false);
+  //Deleting services in PopupServiceContainer
+  void onTapDelete({String docId}) async {
+    print('deleting');
+    await _fireStore.collection('services').doc(docId).delete();
+    print('done');
+  }
+
+  //Editing services
+  void onTapEdit() {
+    Navigator.pop(context);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditOrAddScreen(
+          addService: true,
+        ),
+      ),
+    );
+  }
+
+  //Pushes to EditOrAddScreen
+  void onTapAddService() {
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => EditOrAddScreen(addService: true)));
   }
 
   @override
@@ -149,19 +154,21 @@ class _HomeScreenState extends State<HomeScreen> {
       onWillPop: () async => false,
       child: Scaffold(
         key: _scaffoldKey,
+
+        //Custom drawer
+        backgroundColor: kBackgroundColor,
         endDrawer: CustomDrawer(
           width: width,
-          onTap: onTapLogOut,
+          onTapLogOut: onTapLogOut,
         ),
-        backgroundColor: kBackgroundColor,
-        //Custom drawer
 
         body: ListView(
           children: [
             SizedBox(
-              height: 20,
+              height: height * 0.03,
             ),
 
+            //Drawer button
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 20),
               child: Row(
@@ -173,22 +180,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-            //Heading
-            Padding(
-              padding: EdgeInsets.only(left: 10),
-              child: Text(
-                'Hey',
-                style: TextStyle(
-                  fontSize: 30,
-                  color: Colors.white.withOpacity(0.5),
-                ),
-              ),
-            ),
 
+            //Admin heading
             Padding(
               padding: EdgeInsets.only(left: 10),
               child: Text(
-                'Derek',
+                'Admin',
                 style: kHeadingTextStyle,
               ),
             ),
@@ -197,27 +194,26 @@ class _HomeScreenState extends State<HomeScreen> {
             Align(
               alignment: Alignment.centerLeft,
               child: Container(
-                width: 250,
+                width: width * 0.667,
                 padding: EdgeInsets.only(left: 10),
                 child: Divider(
                   color: Colors.white.withOpacity(0.5),
-                ),
-                margin: EdgeInsets.symmetric(
-                  vertical: 10,
                 ),
               ),
             ),
 
             SizedBox(
-              height: 10,
+              height: height * 0.015,
             ),
 
             //Horizontal Rows which displays Get started and Product containers
             HorizontalRows(
               children: [
                 SizedBox(
-                  width: 10,
+                  width: height * 0.015,
                 ),
+
+                //Get started Container
                 BoxContainer(
                   margin: EdgeInsets.only(right: 20),
                   height: height * 0.15,
@@ -226,6 +222,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   imageUrl: null,
                   onTap: onTapGetStarted,
                 ),
+
+                //Products Container
                 BoxContainer(
                   height: height * 0.15,
                   width: width * 0.38,
@@ -266,12 +264,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: List.generate(
                     dataLength,
                     (index) => ServiceContainer(
+                      url: serviceList[index]['imageUrl'],
                       onTap: () {
                         onTapServiceContainer(
                           name: serviceList[index]['name'],
                           description: serviceList[index]['description'],
                           price: serviceList[index]['price'],
                           docId: serviceList[index]['docId'],
+                          url: serviceList[index]['imageUrl'],
                         );
                       },
                       name: serviceList[index]['name'],
@@ -311,16 +311,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
                         Any data should be manually changed in Firebase
                         service collection*/
-
                         onTap: () {
                           onTapServiceContainer(
                             name: serviceList[index]['name'],
                             description: serviceList[index]['description'],
                             price: serviceList[index]['price'],
                             docId: serviceList[index]['docId'],
+                            url: serviceList[index]['imageUrl'],
                           );
                         },
                         name: serviceList[index]['name'],
+                        url: serviceList[index]['imageUrl'],
                       ),
                     ),
                   );
@@ -330,7 +331,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                AddServiceButton(
+                AddOrEditButton(
                   icon: true,
                   onTap: onTapAddService,
                   title: 'Add service',

@@ -1,4 +1,4 @@
-import 'package:barber_shop_admin/contants.dart';
+import 'package:barber_shop_admin/constants.dart';
 import 'package:flutter/material.dart';
 
 /*round button used in all parts of the app with dynamic title,
@@ -193,14 +193,17 @@ class BoxContainer extends StatelessWidget {
 }
 
 class ServiceContainer extends StatelessWidget {
-  ServiceContainer({this.onTap, this.child, this.name});
+  ServiceContainer({this.onTap, this.child, this.name, this.url});
 
   final Function onTap;
   final Widget child;
   final String name;
+  final String url;
 
   @override
   Widget build(BuildContext context) {
+    final double width = MediaQuery.of(context).size.width;
+    final double height = MediaQuery.of(context).size.height;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -208,12 +211,13 @@ class ServiceContainer extends StatelessWidget {
         child: Column(
           children: [
             Container(
-              height: 80,
-              width: 40,
-              color: Colors.yellow,
+              height: height * 0.12,
+              width: width * 0.107,
+              decoration: BoxDecoration(
+                  image: DecorationImage(image: NetworkImage(url))),
             ),
             SizedBox(
-              height: 10,
+              height: height * 0.015,
             ),
             Text(
               name,
@@ -222,7 +226,7 @@ class ServiceContainer extends StatelessWidget {
           ],
         ),
         margin: EdgeInsets.only(right: 10, left: 10),
-        width: 130,
+        width: width * 0.347,
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
@@ -279,11 +283,17 @@ class HorizontalRows extends StatelessWidget {
 }
 
 class PopUpContainer extends StatelessWidget {
-  PopUpContainer({this.name, this.data});
+  PopUpContainer({this.name, this.data, this.price, this.onTapEdit, this.url});
   final String name;
   final String data;
+  final String price;
+  final String url;
+
+  final Function onTapEdit;
   @override
   Widget build(BuildContext context) {
+    final double width = MediaQuery.of(context).size.width;
+    final double height = MediaQuery.of(context).size.height;
     return Material(
       color: Colors.transparent,
       child: Container(
@@ -291,9 +301,9 @@ class PopUpContainer extends StatelessWidget {
           borderRadius: BorderRadius.circular(15),
           color: Color(0xff4D4A56),
         ),
-        width: 260,
-        height: 380,
-        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        width: width * 0.693,
+        height: height * 0.6,
+        padding: EdgeInsets.symmetric(horizontal: 30, vertical: 30),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -303,31 +313,37 @@ class PopUpContainer extends StatelessWidget {
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.grey,
-                fontSize: 38,
+                fontSize: 30,
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.all(8.0),
+              child: Center(
+                child: Container(
+                  height: height * 0.255,
+                  width: width * 0.4,
+                  decoration: BoxDecoration(
+                      image: DecorationImage(
+                    image: NetworkImage(url),
+                  )),
+                ),
               ),
             ),
             Text(
-              '\$12.99',
+              '\$$price',
               style: TextStyle(
-                fontSize: 38,
+                fontSize: 22,
                 color: kButtonColor,
               ),
             ),
-            Center(
-              child: Container(
-                height: 170,
-                width: 150,
-                color: Colors.grey,
-              ),
-            ),
             SizedBox(
-              height: 20,
+              height: height * 0.03,
             ),
             Center(
               child: RoundButtonWidget(
-                onTap: () {},
-                title: 'Buy now',
-                width: 127,
+                onTap: onTapEdit,
+                title: 'Edit',
+                width: width * 0.339,
               ),
             )
           ],
@@ -338,20 +354,23 @@ class PopUpContainer extends StatelessWidget {
 }
 
 class ItemContainer extends StatelessWidget {
-  ItemContainer({this.onTap, this.name, this.onLongPress});
+  ItemContainer({this.onTap, this.name, this.onLongPress, this.url});
   final Function onTap;
   final String name;
   final Function onLongPress;
+  final String url;
 
   @override
   Widget build(BuildContext context) {
+    final double width = MediaQuery.of(context).size.width;
+    final double height = MediaQuery.of(context).size.height;
     return GestureDetector(
       onTap: onTap,
       onLongPress: onLongPress,
       child: Container(
         padding: EdgeInsets.only(left: 5, right: 5, top: 10),
-        height: 200,
-        width: 40,
+        height: height * 0.3,
+        width: width * 0.107,
         margin: EdgeInsets.only(bottom: 10, left: 10),
         decoration: BoxDecoration(
           color: kItemContainerColor,
@@ -360,12 +379,18 @@ class ItemContainer extends StatelessWidget {
         child: Column(
           children: [
             Container(
-              height: 80,
-              width: 80,
-              color: Colors.yellow,
+              height: height * 0.12,
+              width: width * 0.213,
+              decoration: BoxDecoration(
+                image: url == null
+                    ? null
+                    : DecorationImage(
+                        image: NetworkImage(url),
+                      ),
+              ),
             ),
             SizedBox(
-              height: 10,
+              height: height * 0.015,
             ),
             Text(
               name,
@@ -387,15 +412,20 @@ class PopUpServiceContainer extends StatelessWidget {
       this.description,
       this.price,
       this.onTapEdit,
-      this.onTapDelete});
+      this.onTapDelete,
+      this.url});
   final String title;
   final String description;
   final String price;
   final Function onTapEdit;
   final Function onTapDelete;
+  final String url;
 
   @override
   Widget build(BuildContext context) {
+    final double width = MediaQuery.of(context).size.width;
+    final double height = MediaQuery.of(context).size.height;
+
     return Material(
       color: Colors.transparent,
       child: Container(
@@ -406,7 +436,7 @@ class PopUpServiceContainer extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
-              height: 20,
+              height: height * 0.03,
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -425,14 +455,17 @@ class PopUpServiceContainer extends StatelessWidget {
                   ],
                 ),
                 Container(
-                  height: 80,
-                  width: 40,
-                  color: Colors.red,
+                  height: height * 0.12,
+                  width: width * 0.107,
+                  decoration: BoxDecoration(
+                      image: DecorationImage(
+                    image: NetworkImage(url),
+                  )),
                 ),
               ],
             ),
             SizedBox(
-              height: 10,
+              height: height * 0.015,
             ),
             Text(
               description,
@@ -446,7 +479,7 @@ class PopUpServiceContainer extends StatelessWidget {
                   onTap: onTapDelete,
                 ),
                 SizedBox(
-                  width: 10,
+                  width: width * 0.027,
                 ),
                 SmallActionButton(
                   title: 'edit',
@@ -478,19 +511,26 @@ class SmallActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final double width = MediaQuery.of(context).size.width;
+    final double height = MediaQuery.of(context).size.height;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         child: Center(
-          child: Text(title),
+          child: Text(
+            title,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.5),
+            ),
+          ),
         ),
         margin: EdgeInsets.symmetric(
           vertical: 10,
         ),
-        height: 30,
-        width: 70,
+        height: height * 0.045,
+        width: width * 0.187,
         decoration: BoxDecoration(
-          color: kItemContainerColor,
+          color: Colors.black.withOpacity(0.2),
           borderRadius: BorderRadius.circular(10),
         ),
       ),
@@ -499,9 +539,15 @@ class SmallActionButton extends StatelessWidget {
 }
 
 class ModalBottomSheetContainer extends StatelessWidget {
-  ModalBottomSheetContainer({this.onTap, this.onChanged});
-  final Function onTap;
-  final Function onChanged;
+  ModalBottomSheetContainer(
+      {this.onTapAdd,
+      this.onChangedName,
+      this.onChangedPrice,
+      this.onTapImage});
+  final Function onTapAdd;
+  final Function onChangedName;
+  final Function onChangedPrice;
+  final Function onTapImage;
 
   @override
   Widget build(BuildContext context) {
@@ -515,7 +561,7 @@ class ModalBottomSheetContainer extends StatelessWidget {
             topRight: Radius.circular(15),
           ),
         ),
-        height: 300,
+        height: 500,
         child: Column(
           children: [
             SizedBox(
@@ -530,14 +576,28 @@ class ModalBottomSheetContainer extends StatelessWidget {
             ),
             TextFieldWidget(
               hintText: 'product name',
-              onChanged: onChanged,
+              onChanged: onChangedName,
+            ),
+            TextFieldWidget(
+              hintText: 'price',
+              onChanged: onChangedPrice,
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 30),
+                child: SmallActionButton(
+                  onTap: onTapImage,
+                  title: 'image',
+                ),
+              ),
             ),
             SizedBox(
               height: 20,
             ),
             RoundButtonWidget(
               title: 'add',
-              onTap: onTap,
+              onTap: onTapAdd,
               height: 40,
             ),
           ],
@@ -547,21 +607,23 @@ class ModalBottomSheetContainer extends StatelessWidget {
   }
 }
 
-class AddServiceButton extends StatelessWidget {
-  AddServiceButton({this.onTap, this.title, this.icon});
+class AddOrEditButton extends StatelessWidget {
+  AddOrEditButton({this.onTap, this.title, this.icon});
   final Function onTap;
   final String title;
   final bool icon;
   @override
   Widget build(BuildContext context) {
+    final double width = MediaQuery.of(context).size.width;
+    final double height = MediaQuery.of(context).size.height;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         margin: EdgeInsets.symmetric(
           vertical: 10,
         ),
-        height: 50,
-        width: 145,
+        height: height * 0.075,
+        width: width * 0.387,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -572,7 +634,7 @@ class AddServiceButton extends StatelessWidget {
                   )
                 : Container(),
             SizedBox(
-              width: 10,
+              width: width * 0.027,
             ),
             Text(
               title,
@@ -604,26 +666,28 @@ class CustomDrawer extends StatelessWidget {
   const CustomDrawer({
     Key key,
     @required this.width,
-    this.onTap,
+    this.onTapLogOut,
   });
 
   final double width;
-  final Function onTap;
+  final Function onTapLogOut;
 
   @override
   Widget build(BuildContext context) {
+    final double width = MediaQuery.of(context).size.width;
+    final double height = MediaQuery.of(context).size.height;
     return Container(
-      width: 100,
+      width: width * 0.27,
       color: kBackgroundColor,
       child: Column(
         children: [
           SizedBox(
-            height: 30,
+            height: height * 0.045,
           ),
           GestureDetector(
-            onTap: onTap,
+            onTap: onTapLogOut,
             child: Container(
-              height: 30,
+              height: height * 0.045,
               width: width,
               color: Colors.transparent,
               child: Center(

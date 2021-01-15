@@ -1,8 +1,8 @@
-import 'package:barber_shop_admin/barber_widgets.dart';
-import 'package:barber_shop_admin/contants.dart';
+import 'package:barber_shop_admin/constants.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:barber_shop_admin/screens/bookings_for_the_day_screen.dart';
+import 'package:intl/intl.dart';
 
 class ManageBookingScreen extends StatefulWidget {
   @override
@@ -20,12 +20,14 @@ class _ManageBookingScreenState extends State<ManageBookingScreen>
 
   @override
   Widget build(BuildContext context) {
+    final double width = MediaQuery.of(context).size.width;
+    final double height = MediaQuery.of(context).size.height;
     return Container(
       color: kBackgroundColor,
       child: Column(
         children: [
           SizedBox(
-            height: 20,
+            height: height * 0.03,
           ),
           //Upcoming and completed Tabs
           Padding(
@@ -103,6 +105,8 @@ class _TabBarScreensState extends State<TabBarScreens> {
 
   @override
   Widget build(BuildContext context) {
+    final double width = MediaQuery.of(context).size.width;
+    final double height = MediaQuery.of(context).size.height;
     return Container(
       color: kBackgroundColor,
       child: StreamBuilder<QuerySnapshot>(
@@ -140,12 +144,20 @@ class _TabBarScreensState extends State<TabBarScreens> {
           //Each TimeContainer is added to timeContainers list
           for (var eachDate in data) {
             //Each date in bookingDates collection
-            final String name = eachDate.id;
+            final String docStringDate = eachDate.id;
+
+            //Getting the current day and date
+            final dateTime = eachDate['timeStamp'];
+            var date = dateTime.toDate();
+            final passedDate = DateTime(date.year, date.month, date.day);
+            final day = DateFormat('yMMMEd').format(passedDate);
+            print(day);
 
             //TimeContainer
             final timeContainer = DateContainer(
-              name: name,
+              docStringDate: docStringDate,
               fromCompletedScreen: widget.fromCompletedScreen,
+              day: day,
             );
 
             //Adds the timeContainers
@@ -163,9 +175,11 @@ class _TabBarScreensState extends State<TabBarScreens> {
 }
 
 class DateContainer extends StatefulWidget {
-  DateContainer({this.name, this.fromCompletedScreen});
-  final String name;
+  DateContainer({this.docStringDate, this.fromCompletedScreen, this.day});
+  final String docStringDate;
   final bool fromCompletedScreen;
+  final String day;
+
   @override
   _DateContainerState createState() => _DateContainerState();
 }
@@ -174,6 +188,8 @@ class _DateContainerState extends State<DateContainer> {
   final _fireStore = FirebaseFirestore.instance;
   @override
   Widget build(BuildContext context) {
+    final double width = MediaQuery.of(context).size.width;
+    final double height = MediaQuery.of(context).size.height;
     return GestureDetector(
       /*When tapped on each TimeContainer the name and fromCompletedScreen bool
        is passed to DayBookings screen */
@@ -182,8 +198,9 @@ class _DateContainerState extends State<DateContainer> {
           context,
           MaterialPageRoute(
             builder: (context) => BookingsForTheDayScreen(
-              date: widget.name,
+              date: widget.docStringDate,
               fromCompletedScreen: widget.fromCompletedScreen,
+              day: widget.day,
             ),
           ),
         );
@@ -195,8 +212,8 @@ class _DateContainerState extends State<DateContainer> {
         ),
         padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         margin: EdgeInsets.all(10),
-        height: 100,
-        width: 250,
+        height: height * 0.15,
+        width: width * 0.667,
         child: Center(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -206,7 +223,7 @@ class _DateContainerState extends State<DateContainer> {
               ),
               //Shows the date
               Text(
-                widget.name,
+                widget.day,
                 style: kServiceContainerTextStyle.copyWith(fontSize: 20),
               ),
               widget.fromCompletedScreen
@@ -216,7 +233,7 @@ class _DateContainerState extends State<DateContainer> {
                   : StreamBuilder<QuerySnapshot>(
                       stream: _fireStore
                           .collection('bookingDates')
-                          .doc(widget.name)
+                          .doc(widget.docStringDate)
                           .collection('time')
                           .where('isCompleted', isEqualTo: false)
                           .snapshots(),

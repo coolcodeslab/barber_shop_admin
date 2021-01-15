@@ -1,10 +1,9 @@
-import 'package:barber_shop_admin/contants.dart';
+import 'package:barber_shop_admin/constants.dart';
 import 'package:barber_shop_admin/screens/navigation_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:barber_shop_admin/barber_widgets.dart';
-import 'package:barber_shop_admin/screens/home_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   static const id = 'Signup screen';
@@ -29,11 +28,9 @@ class _SignupScreenState extends State<SignupScreen> {
     password = n;
   }
 
-  /*
-  If email and password are not equal to null user info email, password and
+  /*If email and password are not equal to null user info email, password and
   uid is saved fireStore admin collection
-  And screen is pushed to home screen
-   */
+  And screen is pushed to home screen*/
   void onTapSignup() async {
     setState(() {
       showSpinner = true;
@@ -62,36 +59,52 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final double width = MediaQuery.of(context).size.width;
+    final double height = MediaQuery.of(context).size.height;
     return Scaffold(
       backgroundColor: kBackgroundColor,
       body: SingleChildScrollView(
         child: Column(
           children: [
             SizedBox(
-              height: 30,
+              height: height * 0.045,
+            ),
+            //Back button
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  BackButton(
+                    color: kButtonColor,
+                  ),
+                ],
+              ),
             ),
 
             //Space for logo
             Container(
-              height: 180,
-              width: 180,
+              height: height * 0.27,
+              width: width * 0.48,
               color: Colors.black.withOpacity(0.5),
             ),
 
             SizedBox(
-              height: 40,
+              height: height * 0.06,
             ),
             TextFieldWidget(
               hintText: 'email',
               onChanged: onChangedEmail,
+              maxLines: 1,
             ),
             TextFieldWidget(
               hintText: 'password',
               onChanged: onChangedPassword,
               obscureText: true,
+              maxLines: 1,
             ),
             SizedBox(
-              height: 50,
+              height: height * 0.075,
             ),
             RoundButtonWidget(
               title: 'sign up',

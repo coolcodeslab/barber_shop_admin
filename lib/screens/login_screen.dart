@@ -1,5 +1,4 @@
-import 'package:barber_shop_admin/contants.dart';
-import 'package:barber_shop_admin/screens/home_screen.dart';
+import 'package:barber_shop_admin/constants.dart';
 import 'package:barber_shop_admin/screens/navigation_screen.dart';
 import 'package:barber_shop_admin/screens/signup_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -60,6 +59,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final double width = MediaQuery.of(context).size.width;
+    final double height = MediaQuery.of(context).size.height;
+
     return Scaffold(
       backgroundColor: kBackgroundColor,
       body: SingleChildScrollView(
@@ -67,18 +69,18 @@ class _LoginScreenState extends State<LoginScreen> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             SizedBox(
-              height: 30,
+              height: height * 0.045,
             ),
 
             //Space for the logo
             Container(
-              height: 180,
-              width: 180,
+              height: height * 0.27,
+              width: width * 0.48,
               color: Colors.black.withOpacity(0.5),
             ),
 
             SizedBox(
-              height: 40,
+              height: height * 0.06,
             ),
             TextFieldWidget(
               hintText: 'Email',
@@ -92,7 +94,7 @@ class _LoginScreenState extends State<LoginScreen> {
               maxLines: 1,
             ),
             SizedBox(
-              height: 50,
+              height: height * 0.075,
             ),
             RoundButtonWidget(
               title: 'login',

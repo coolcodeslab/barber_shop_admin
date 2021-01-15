@@ -1,7 +1,12 @@
+import 'dart:io';
+
 import 'package:barber_shop_admin/barber_widgets.dart';
-import 'package:barber_shop_admin/contants.dart';
+import 'package:barber_shop_admin/constants.dart';
+import 'package:barber_shop_admin/screens/edit_service_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:random_string/random_string.dart';
 
 class ItemScreen extends StatefulWidget {
@@ -39,13 +44,15 @@ class _ItemScreenState extends State<ItemScreen>
 
   @override
   Widget build(BuildContext context) {
+    final double width = MediaQuery.of(context).size.width;
+    final double height = MediaQuery.of(context).size.height;
     return Scaffold(
       backgroundColor: kBackgroundColor,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            height: 30,
+            height: height * 0.045,
           ),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 20),
@@ -74,17 +81,18 @@ class _ItemScreenState extends State<ItemScreen>
           Padding(
             padding: EdgeInsets.all(10),
             child: TabBar(
+              indicator: CircleTabIndicator(color: Colors.white, radius: 4),
               controller: tabController,
               isScrollable: false,
               indicatorColor: Colors.white,
               labelColor: Colors.white,
               unselectedLabelColor: Colors.white.withOpacity(0.5),
               labelStyle: TextStyle(
-                fontSize: 12,
+                fontSize: 9,
                 fontWeight: FontWeight.w700,
               ),
               unselectedLabelStyle: TextStyle(
-                fontSize: 12,
+                fontSize: 8,
                 fontWeight: FontWeight.w500,
               ),
 
@@ -113,10 +121,8 @@ class _ItemScreenState extends State<ItemScreen>
             child: TabBarView(
               controller: tabController,
               children: <Widget>[
-                /*
-                Read the line before itemList State to have better understanding
-                about what is being passed and why
-                 */
+                /*Read the line before itemList State to have better understanding
+                about what is being passed and why*/
 
                 ItemList(
                   category: widget.title,
@@ -124,10 +130,8 @@ class _ItemScreenState extends State<ItemScreen>
                   collection: 'collection',
                 ),
 
-                /*
-                Read the line before itemList State to have better understanding
-                about what is being passed and why
-                 */
+                /*Read the line before itemList State to have better understanding
+                about what is being passed and why*/
 
                 ItemList(
                   category: widget.title,
@@ -135,10 +139,8 @@ class _ItemScreenState extends State<ItemScreen>
                   collection: 'collection',
                 ),
 
-                /*
-                Read the line before itemList State to have better understanding
-                about what is being passed and why
-                 */
+                /*Read the line before itemList State to have better understanding
+                about what is being passed and why*/
 
                 ItemList(
                   category: widget.title,
@@ -181,19 +183,46 @@ class ItemList extends StatefulWidget {
 
 class _ItemListState extends State<ItemList> {
   final _fireStore = FirebaseFirestore.instance;
+  final _firebaseStorage = FirebaseStorage.instance.ref().child('images');
+  final picker = ImagePicker();
+  File _image;
 
   String productName;
+  String productPrice;
+  String itemDownloadUrl;
 
   void onChangedProductName(n) {
     productName = n;
   }
 
-  /*
-  When item container is Tapped  a dialog boc with a container pops up
+  void onChangedProductPrice(n) {
+    productPrice = n;
+  }
 
-  Only the item name is passed
-   */
-  void onTapItemContainer(String name) {
+  void onTapEdit({String productId, String name, String price, String url}) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditOrAddScreen(
+          collection: widget.category.toLowerCase(),
+          fromItemScreen: true,
+          productId: productId,
+          section: widget.section,
+          name: name,
+          price: price,
+          imageUrl: url,
+        ),
+      ),
+    );
+  }
+
+  //When item container is Tapped  a dialog boc with a container pops up
+  void onTapItemContainer({
+    String name,
+    String price,
+    String productId,
+    String url,
+  }) {
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
@@ -204,37 +233,89 @@ class _ItemListState extends State<ItemList> {
         return Center(
           child: PopUpContainer(
             name: name,
+            price: price,
+            url: url,
+            onTapEdit: () {
+              Navigator.pop(context);
+              onTapEdit(
+                productId: productId,
+                name: name,
+                price: price,
+                url: url,
+              );
+            },
           ),
         );
       },
     );
   }
 
+  void onTapImage() async {
+    print('picking image');
+    final pickedFile = await picker.getImage(source: ImageSource.gallery);
+
+    setState(
+      () {
+        if (pickedFile != null) {
+          _image = File(pickedFile.path);
+        } else {
+          print('No image selected.');
+        }
+      },
+    );
+    print('done');
+  }
+
+  void uploadToFireStore() async {
+    try {
+      final String productId = randomAlphaNumeric(9);
+      await _fireStore
+          .collection(widget.category.toLowerCase())
+          .doc(widget.section)
+          .collection(widget.collection)
+          .doc(productId)
+          .set({
+        'product name': productName,
+        'product id': productId,
+        'price': productPrice,
+        'imageUrl': itemDownloadUrl,
+      });
+    } catch (e) {
+      print(e);
+    }
+  }
+
   /*Adds the product to the relevant section in the firebase list with a product
   name
 
   Nothing happens if the product name is null*/
-  void onTapAddButton() async {
-    final String productId = randomAlphaNumeric(9);
+  void onTapAddButton(File file) async {
+    print('started uploading');
+    final String r = randomAlphaNumeric(9);
 
-    await _fireStore
-        .collection(widget.category)
-        .doc(widget.section)
-        .collection(widget.collection)
-        .add({
-      'product name': productName,
-      'product id': productId,
-    });
+    await _firebaseStorage.child('$r.jpg').putFile(file).then(
+      (data) async {
+        await data.ref.getDownloadURL().then(
+              (value) => itemDownloadUrl = value,
+            );
+      },
+    );
+    uploadToFireStore();
+    print('done');
     Navigator.pop(context);
   }
 
   //Modal bottom sheet pops up to add product
-  void onPressedFAB() {
+  void onPressedPlus() {
     showModalBottomSheet(
       context: context,
       builder: (context) => ModalBottomSheetContainer(
-        onChanged: onChangedProductName,
-        onTap: onTapAddButton,
+        onChangedName: onChangedProductName,
+        onTapAdd: () {
+          onTapAddButton(_image);
+        },
+        onChangedPrice: onChangedProductPrice,
+        onTapImage: onTapImage,
       ),
     );
   }
@@ -244,7 +325,7 @@ class _ItemListState extends State<ItemList> {
   void onLongPressItemContainer({String uid}) async {
     print(uid);
     await _fireStore
-        .collection(widget.category)
+        .collection(widget.category.toLowerCase())
         .doc(widget.section)
         .collection(widget.collection)
         .doc(uid)
@@ -253,13 +334,15 @@ class _ItemListState extends State<ItemList> {
 
   @override
   Widget build(BuildContext context) {
+    final double width = MediaQuery.of(context).size.width;
+    final double height = MediaQuery.of(context).size.height;
     return Scaffold(
       /*Check if the user is from the get started screen and if so it does not
       show the Floating action button*/
       floatingActionButton: widget.category == 'get started'
           ? null
           : FloatingActionButton(
-              onPressed: onPressedFAB,
+              onPressed: onPressedPlus,
               child: Icon(Icons.add),
               backgroundColor: kButtonColor,
             ),
@@ -268,7 +351,7 @@ class _ItemListState extends State<ItemList> {
         color: kBackgroundColor,
         child: StreamBuilder<QuerySnapshot>(
           stream: _fireStore
-              .collection(widget.category)
+              .collection(widget.category.toLowerCase())
               .doc(widget.section)
               .collection(widget.collection)
               .snapshots(),
@@ -292,8 +375,14 @@ class _ItemListState extends State<ItemList> {
                   are taken from the FireStore*/
                   return ItemContainer(
                     name: products[index]['product name'],
+                    url: products[index]['imageUrl'],
                     onTap: () {
-                      onTapItemContainer(products[index]['product name']);
+                      onTapItemContainer(
+                        name: products[index]['product name'],
+                        price: products[index]['price'],
+                        productId: products[index]['product id'],
+                        url: products[index]['imageUrl'],
+                      );
                     },
                     //Passes the uid when pressed
                     onLongPress: () {
@@ -307,5 +396,32 @@ class _ItemListState extends State<ItemList> {
         ),
       ),
     );
+  }
+}
+
+class CircleTabIndicator extends Decoration {
+  final BoxPainter _painter;
+
+  CircleTabIndicator({@required Color color, @required double radius})
+      : _painter = _CirclePainter(color, radius);
+
+  @override
+  BoxPainter createBoxPainter([onChanged]) => _painter;
+}
+
+class _CirclePainter extends BoxPainter {
+  final Paint _paint;
+  final double radius;
+
+  _CirclePainter(Color color, this.radius)
+      : _paint = Paint()
+          ..color = color
+          ..isAntiAlias = true;
+
+  @override
+  void paint(Canvas canvas, Offset offset, ImageConfiguration cfg) {
+    final Offset circleOffset =
+        offset + Offset(cfg.size.width / 2, cfg.size.height - radius);
+    canvas.drawCircle(circleOffset, radius, _paint);
   }
 }

@@ -4,7 +4,6 @@ import 'package:barber_shop_admin/screens/item_screen.dart';
 import 'package:barber_shop_admin/screens/loading_screen.dart';
 import 'package:barber_shop_admin/screens/login_screen.dart';
 import 'package:barber_shop_admin/screens/navigation_screen.dart';
-import 'package:barber_shop_admin/screens/settings_screen.dart';
 import 'package:barber_shop_admin/screens/signup_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -34,7 +33,6 @@ class MyApp extends StatelessWidget {
           ManageTimesScreen.id: (context) => ManageTimesScreen(),
           LoadingScreen.id: (context) => LoadingScreen(),
           NavigationScreen.id: (context) => NavigationScreen(),
-          SettingsScreen.id: (context) => SettingsScreen(),
         },
       ),
     );

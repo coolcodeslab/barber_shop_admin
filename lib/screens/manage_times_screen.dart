@@ -1,10 +1,7 @@
-import 'package:barber_shop_admin/barber_widgets.dart';
-import 'package:barber_shop_admin/contants.dart';
+import 'package:barber_shop_admin/constants.dart';
 import 'package:barber_shop_admin/models/list.dart';
 import 'package:barber_shop_admin/provider_data.dart';
-import 'package:barber_shop_admin/screens/manage_booking_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
