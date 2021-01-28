@@ -1,7 +1,11 @@
+import 'dart:io';
+
+import 'package:barber_shop_admin/provider_data.dart';
 import 'package:barber_shop_admin/screens/navigation_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:barber_shop_admin/screens/login_screen.dart';
+import 'package:provider/provider.dart';
 
 class LoadingScreen extends StatefulWidget {
   static const id = 'loading page';
@@ -15,6 +19,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
   void initState() {
     super.initState();
     assignUser();
+    checkPlatform();
   }
 
   String uid;
@@ -28,6 +33,16 @@ class _LoadingScreenState extends State<LoadingScreen> {
     } catch (e) {
       print("its a null");
       uid = null;
+    }
+  }
+
+  void checkPlatform() {
+    /*Check is platform is android and if it is so it sets the isAndroid
+    Provider variable to true*/
+    if (Platform.isAndroid) {
+      Provider.of<ProviderData>(context, listen: false).isAndroid = true;
+    } else {
+      Provider.of<ProviderData>(context, listen: false).isAndroid = false;
     }
   }
 

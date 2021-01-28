@@ -19,4 +19,6 @@ class ProviderData extends ChangeNotifier {
   bool showSignUpGoogleSignInSpinner;
   bool showLogInAppleSignInSpinner;
   bool showSignUpAppleSignInSpinner;
+
+  bool pending = false;
 }

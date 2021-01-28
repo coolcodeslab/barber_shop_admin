@@ -1,12 +1,15 @@
 import 'package:barber_shop_admin/constants.dart';
 import 'package:barber_shop_admin/db_functions/fireStore.dart';
+import 'package:barber_shop_admin/provider_data.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class BookingsForTheDayScreen extends StatefulWidget {
-  BookingsForTheDayScreen({this.date, this.fromCompletedScreen, this.day});
+  BookingsForTheDayScreen({this.date, this.completed, this.day});
   final String date;
-  final bool fromCompletedScreen;
+  final bool completed;
   final String day;
   @override
   _BookingsForTheDayScreenState createState() =>
@@ -19,7 +22,6 @@ class _BookingsForTheDayScreenState extends State<BookingsForTheDayScreen> {
   FireStoreDBFunctions fireStoreDBFunctions = FireStoreDBFunctions();
   @override
   Widget build(BuildContext context) {
-    final double width = MediaQuery.of(context).size.width;
     final double height = MediaQuery.of(context).size.height;
     return Scaffold(
       backgroundColor: kBackgroundColor,
@@ -38,7 +40,10 @@ class _BookingsForTheDayScreenState extends State<BookingsForTheDayScreen> {
                 ),
                 Text(
                   widget.day,
-                  style: kHeadingTextStyle,
+                  style: kHeadingTextStyle.copyWith(
+                      color: Colors.black.withOpacity(
+                    0.8,
+                  )),
                 ),
               ],
             ),
@@ -59,52 +64,53 @@ class _BookingsForTheDayScreenState extends State<BookingsForTheDayScreen> {
                 );
               }
               final dataLen = snapshot.data.docs.length;
+              final data = snapshot.data.docs;
 
               return Expanded(
                 child: ListView.builder(
                   itemCount: dataLen,
                   itemBuilder: (context, index) {
-                    final time = snapshot.data.docs[index]['time'];
-                    final name = snapshot.data.docs[index]['name'];
-                    final service = snapshot.data.docs[index]['service'];
-                    final fireStoreIndex = snapshot.data.docs[index]['index'];
-                    final bookingId = snapshot.data.docs[index]['bookingId'];
-                    final uid = snapshot.data.docs[index]['uid'];
-                    bool isCompleted = snapshot.data.docs[index]['isCompleted'];
+                    final time = data[index]['time'];
+                    final name = data[index]['name'];
+                    final service = data[index]['service'];
+                    final fireStoreIndex = data[index]['index'];
+                    final bookingId = data[index]['bookingId'];
+                    final uid = data[index]['uid'];
+                    bool isCompleted = data[index]['isCompleted'];
+                    String mobileNo;
+                    try {
+                      mobileNo = data[index]['mobileNo'];
+                    } catch (e) {
+                      mobileNo = '';
+                    }
 
                     return BookingSlots(
-                      onTapDelete: widget.fromCompletedScreen
-                          ? () {}
-                          : () {
-                              print('deleting');
+                      fromCompletedScreen: widget.completed,
+                      onTapDelete: () {
+                        onTapDelete(
+                          bookingId: bookingId,
+                          fireStoreIndex: fireStoreIndex,
+                          uid: uid,
+                        );
 
-                              //Removes form booking from dataBase
-                              fireStoreDBFunctions.deleteBookingFromDB(
-                                  date: widget.date,
-                                  index: fireStoreIndex.toString());
+                        //Removes form booking from dataBase
+                      },
+                      onTapTick: () {
+                        setState(() {
+                          isCompleted = !isCompleted;
+                        });
 
-                              //Removes form booking from userDataBase
-                              fireStoreDBFunctions.deleteBookingFromUsers(
-                                  uid: uid, bookingId: bookingId);
-                              print('done');
-                            },
-                      onTapTick: widget.fromCompletedScreen
-                          ? () {}
-                          : () {
-                              setState(() {
-                                isCompleted = !isCompleted;
-                              });
-
-                              //Switches isCompleted
-                              fireStoreDBFunctions.switchToCompleted(
-                                  date: widget.date,
-                                  index: fireStoreIndex.toString(),
-                                  isCompleted: isCompleted);
-                            },
+                        //Switches isCompleted
+                        fireStoreDBFunctions.switchToCompleted(
+                            date: widget.date,
+                            index: fireStoreIndex.toString(),
+                            isCompleted: isCompleted);
+                      },
                       isCompleted: isCompleted,
                       name: name,
                       time: time,
                       service: service,
+                      mobileNo: mobileNo,
                     );
                   },
                 ),
@@ -115,22 +121,95 @@ class _BookingsForTheDayScreenState extends State<BookingsForTheDayScreen> {
       ),
     );
   }
+
+  void onTapDelete({String bookingId, int fireStoreIndex, String uid}) {
+    final bool isAndroid =
+        Provider.of<ProviderData>(context, listen: false).isAndroid;
+    //confirmation dialog box
+    showDialog(
+      context: context,
+      builder: (BuildContext context) => isAndroid
+          ? AlertDialog(
+              title: Text("Cancel Booking"),
+              content: Text("Are you sure you want to cancel booking?"),
+              actions: [
+                FlatButton(
+                  child: Text("Cancel"),
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                ),
+                FlatButton(
+                  child: Text("Continue"),
+                  onPressed: () {
+                    cancelBooking(
+                      bookingId: bookingId,
+                      fireStoreIndex: fireStoreIndex,
+                      uid: uid,
+                    );
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
+            )
+          : CupertinoAlertDialog(
+              title: Text("Cancel Booking"),
+              content: Text("Are you sure you want to cancel booking?"),
+              actions: <Widget>[
+                CupertinoDialogAction(
+                  isDefaultAction: true,
+                  child: Text("Yes"),
+                  onPressed: () {
+                    cancelBooking(
+                      bookingId: bookingId,
+                      fireStoreIndex: fireStoreIndex,
+                      uid: uid,
+                    );
+                    Navigator.pop(context);
+                  },
+                ),
+                CupertinoDialogAction(
+                  child: Text("No"),
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                )
+              ],
+            ),
+    );
+  }
+
+  void cancelBooking({int fireStoreIndex, String uid, String bookingId}) {
+    fireStoreDBFunctions.deleteBookingFromDB(
+        date: widget.date, index: fireStoreIndex.toString());
+
+    //Removes form booking from userDataBase
+    fireStoreDBFunctions.deleteBookingFromUsers(
+      uid: uid,
+      bookingId: bookingId,
+    );
+  }
 }
 
 class BookingSlots extends StatelessWidget {
-  BookingSlots(
-      {this.onTapTick,
-      this.onTapDelete,
-      this.isCompleted,
-      this.name,
-      this.time,
-      this.service});
+  BookingSlots({
+    this.onTapTick,
+    this.onTapDelete,
+    this.isCompleted,
+    this.name,
+    this.time,
+    this.service,
+    this.fromCompletedScreen,
+    this.mobileNo,
+  });
   final Function onTapTick;
   final Function onTapDelete;
   final bool isCompleted;
   final String name;
   final String time;
   final String service;
+  final bool fromCompletedScreen;
+  final String mobileNo;
 
   @override
   Widget build(BuildContext context) {
@@ -142,9 +221,8 @@ class BookingSlots extends StatelessWidget {
         borderRadius: BorderRadius.circular(15),
       ),
       margin: EdgeInsets.all(10),
-      padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+      padding: EdgeInsets.symmetric(vertical: 20, horizontal: 20),
       width: width * 0.667,
-      height: height * 0.15,
       child: Row(
         children: [
           Expanded(
@@ -155,56 +233,69 @@ class BookingSlots extends StatelessWidget {
               children: [
                 Text(
                   name,
-                  style: kServiceContainerTextStyle.copyWith(fontSize: 20),
+                  style: kServiceContainerTextStyle.copyWith(
+                      fontSize: 20,
+                      color: Colors.black.withOpacity(
+                        0.8,
+                      )),
+                ),
+                Text(
+                  mobileNo,
+                  style:
+                      kServiceContainerTextStyle.copyWith(color: Colors.grey),
                 ),
                 Text(
                   time,
-                  style: kServiceContainerTextStyle,
+                  style:
+                      kServiceContainerTextStyle.copyWith(color: Colors.grey),
                 ),
                 Text(
                   service,
-                  style: kServiceContainerTextStyle,
+                  style:
+                      kServiceContainerTextStyle.copyWith(color: Colors.grey),
                 ),
               ],
             ),
           ),
-          Expanded(
-            child: Row(
-              children: [
-                GestureDetector(
-                  onTap: onTapTick,
-                  child: Container(
-                    height: height * 0.06,
-                    width: width * 0.107,
-                    child: Icon(
-                      Icons.check,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isCompleted ? Colors.green : Colors.grey,
-                      shape: BoxShape.circle,
-                    ),
+          fromCompletedScreen
+              ? Container()
+              : Expanded(
+                  child: Row(
+                    children: [
+                      GestureDetector(
+                        onTap: onTapTick,
+                        child: Container(
+                          height: height * 0.06,
+                          width: width * 0.107,
+                          child: Icon(
+                            Icons.check,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isCompleted ? Colors.green : Colors.grey,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        width: width * 0.053,
+                      ),
+                      GestureDetector(
+                        onTap: onTapDelete,
+                        child: Container(
+                          height: height * 0.06,
+                          width: width * 0.107,
+                          child: Icon(
+                            Icons.clear,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.redAccent,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                SizedBox(
-                  width: width * 0.053,
-                ),
-                GestureDetector(
-                  onTap: onTapDelete,
-                  child: Container(
-                    height: height * 0.06,
-                    width: width * 0.107,
-                    child: Icon(
-                      Icons.clear,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.redAccent,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );

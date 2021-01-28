@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:barber_shop_admin/barber_widgets.dart';
 
 /*Booking Calender screen which picks the selected time within 4 days*/
 class ManageTimesScreen extends StatefulWidget {
@@ -80,7 +81,6 @@ class _ManageTimesScreenState extends State<ManageTimesScreen>
 
   @override
   Widget build(BuildContext context) {
-    final double width = MediaQuery.of(context).size.width;
     final double height = MediaQuery.of(context).size.height;
     return Scaffold(
       //Next Button
@@ -94,11 +94,6 @@ class _ManageTimesScreenState extends State<ManageTimesScreen>
       backgroundColor: kBackgroundColor,
       body: Stack(
         children: [
-          //Background design
-//          BackGroundDesign(
-//            height: height * 0.3,
-//            width: width * 0.8,
-//          ),
           Column(
             children: [
               SizedBox(
@@ -126,7 +121,7 @@ class _ManageTimesScreenState extends State<ManageTimesScreen>
                 padding: EdgeInsets.all(10),
                 child: TabBar(
                   indicatorSize: TabBarIndicatorSize.tab,
-//                  indicator: CircleTabIndicator(color: Colors.white, radius: 4),
+                  indicator: CircleTabIndicator(color: Colors.white, radius: 4),
                   controller: tabController,
                   isScrollable: false,
                   indicatorColor: Colors.transparent,
@@ -161,18 +156,6 @@ class _ManageTimesScreenState extends State<ManageTimesScreen>
                 child: TabBarView(
                   controller: tabController,
                   children: <Widget>[
-//                    Container(
-//                      color: Colors.red,
-//                    ),
-//                    Container(
-//                      color: Colors.yellow,
-//                    ),
-//                    Container(
-//                      color: Colors.pink,
-//                    ),
-//                    Container(
-//                      color: Colors.green,
-//                    ),
                     TimeSelectorScreen(
                       day: today,
                       dateTime: day1,
@@ -371,7 +354,7 @@ class NewTimeContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final double width = MediaQuery.of(context).size.width;
-    final double height = MediaQuery.of(context).size.height;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(

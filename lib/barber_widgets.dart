@@ -1,5 +1,10 @@
 import 'package:barber_shop_admin/constants.dart';
+import 'package:barber_shop_admin/models/order_model.dart';
+
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 /*round button used in all parts of the app with dynamic title,
 * height and width */
@@ -156,12 +161,13 @@ class BoxContainer extends StatelessWidget {
             Align(
               alignment: Alignment.bottomCenter,
               child: Container(
-                height: 50,
+                height: 120,
+                width: 180,
                 decoration: BoxDecoration(
                   image: imageUrl == null
                       ? null
                       : DecorationImage(
-                          image: NetworkImage(
+                          image: AssetImage(
                             imageUrl,
                           ),
                           fit: BoxFit.cover,
@@ -213,8 +219,9 @@ class ServiceContainer extends StatelessWidget {
             Container(
               height: height * 0.12,
               width: width * 0.107,
-              decoration: BoxDecoration(
-                  image: DecorationImage(image: NetworkImage(url))),
+              child: CachedNetworkImage(
+                imageUrl: url,
+              ),
             ),
             SizedBox(
               height: height * 0.015,
@@ -228,14 +235,6 @@ class ServiceContainer extends StatelessWidget {
         margin: EdgeInsets.only(right: 10, left: 10),
         width: width * 0.347,
         decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              spreadRadius: 3,
-              blurRadius: 7,
-              offset: Offset(0, 5),
-            )
-          ],
           color: kBoxContainerColor,
           borderRadius: BorderRadius.only(
             topRight: Radius.circular(20),
@@ -283,13 +282,21 @@ class HorizontalRows extends StatelessWidget {
 }
 
 class PopUpContainer extends StatelessWidget {
-  PopUpContainer({this.name, this.data, this.price, this.onTapEdit, this.url});
+  PopUpContainer({
+    this.name,
+    this.data,
+    this.price,
+    this.onTapEdit,
+    this.url,
+    this.onTapDelete,
+  });
   final String name;
   final String data;
   final String price;
   final String url;
 
   final Function onTapEdit;
+  final Function onTapDelete;
   @override
   Widget build(BuildContext context) {
     final double width = MediaQuery.of(context).size.width;
@@ -299,34 +306,34 @@ class PopUpContainer extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(15),
-          color: Color(0xff4D4A56),
+          color: Colors.white,
+//            0xff4D4A56
         ),
         width: width * 0.693,
-        height: height * 0.6,
+        height: height * 0.55,
         padding: EdgeInsets.symmetric(horizontal: 30, vertical: 30),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              name,
-              textAlign: TextAlign.left,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
-                fontSize: 30,
-              ),
-            ),
             Padding(
               padding: EdgeInsets.all(8.0),
               child: Center(
                 child: Container(
                   height: height * 0.255,
                   width: width * 0.4,
-                  decoration: BoxDecoration(
-                      image: DecorationImage(
-                    image: NetworkImage(url),
-                  )),
+                  child: CachedNetworkImage(
+                    imageUrl: url,
+                  ),
                 ),
+              ),
+            ),
+            Text(
+              name,
+              textAlign: TextAlign.left,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+                fontSize: 30,
               ),
             ),
             Text(
@@ -337,15 +344,24 @@ class PopUpContainer extends StatelessWidget {
               ),
             ),
             SizedBox(
-              height: height * 0.03,
+              height: height * 0.01,
             ),
-            Center(
-              child: RoundButtonWidget(
-                onTap: onTapEdit,
-                title: 'Edit',
-                width: width * 0.339,
-              ),
-            )
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                SmallActionButton(
+                  title: 'delete',
+                  onTap: onTapDelete,
+                ),
+                SizedBox(
+                  width: 10,
+                ),
+                SmallActionButton(
+                  title: 'edit',
+                  onTap: onTapEdit,
+                )
+              ],
+            ),
           ],
         ),
       ),
@@ -381,12 +397,8 @@ class ItemContainer extends StatelessWidget {
             Container(
               height: height * 0.12,
               width: width * 0.213,
-              decoration: BoxDecoration(
-                image: url == null
-                    ? null
-                    : DecorationImage(
-                        image: NetworkImage(url),
-                      ),
+              child: CachedNetworkImage(
+                imageUrl: url,
               ),
             ),
             SizedBox(
@@ -395,7 +407,7 @@ class ItemContainer extends StatelessWidget {
             Text(
               name,
               style: TextStyle(
-                color: Colors.white,
+                color: Colors.black,
                 fontSize: 12,
               ),
             )
@@ -407,19 +419,22 @@ class ItemContainer extends StatelessWidget {
 }
 
 class PopUpServiceContainer extends StatelessWidget {
-  PopUpServiceContainer(
-      {this.title,
-      this.description,
-      this.price,
-      this.onTapEdit,
-      this.onTapDelete,
-      this.url});
+  PopUpServiceContainer({
+    this.title,
+    this.description,
+    this.price,
+    this.onTapEdit,
+    this.onTapDelete,
+    this.url,
+    this.isDefault,
+  });
   final String title;
   final String description;
   final String price;
   final Function onTapEdit;
   final Function onTapDelete;
   final String url;
+  final bool isDefault;
 
   @override
   Widget build(BuildContext context) {
@@ -457,10 +472,9 @@ class PopUpServiceContainer extends StatelessWidget {
                 Container(
                   height: height * 0.12,
                   width: width * 0.107,
-                  decoration: BoxDecoration(
-                      image: DecorationImage(
-                    image: NetworkImage(url),
-                  )),
+                  child: CachedNetworkImage(
+                    imageUrl: url,
+                  ),
                 ),
               ],
             ),
@@ -469,30 +483,35 @@ class PopUpServiceContainer extends StatelessWidget {
             ),
             Text(
               description,
-              style: kPopUpServiceContainerDescriptionStyle,
+              style: kPopUpServiceContainerDescriptionStyle.copyWith(
+                color: Colors.black.withOpacity(0.8),
+              ),
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                SmallActionButton(
-                  title: 'delete',
-                  onTap: onTapDelete,
-                ),
-                SizedBox(
-                  width: width * 0.027,
-                ),
-                SmallActionButton(
-                  title: 'edit',
-                  onTap: onTapEdit,
-                ),
-              ],
-            ),
+            isDefault
+                ? Container()
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      SmallActionButton(
+                        title: 'delete',
+                        onTap: onTapDelete,
+                      ),
+                      SizedBox(
+                        width: width * 0.027,
+                      ),
+                      SmallActionButton(
+                        title: 'edit',
+                        onTap: onTapEdit,
+                      ),
+                    ],
+                  ),
           ],
         ),
         height: 370,
         width: 320,
         decoration: BoxDecoration(
-          color: Color(0xff7F7B78),
+          color: Colors.white,
+//            0xff7F7B78
           borderRadius: BorderRadius.only(
             topRight: Radius.circular(25),
             topLeft: Radius.circular(25),
@@ -505,13 +524,13 @@ class PopUpServiceContainer extends StatelessWidget {
 }
 
 class SmallActionButton extends StatelessWidget {
-  SmallActionButton({this.title, this.onTap});
+  SmallActionButton({this.title, this.onTap, this.width = 70});
   final String title;
   final Function onTap;
+  final double width;
 
   @override
   Widget build(BuildContext context) {
-    final double width = MediaQuery.of(context).size.width;
     final double height = MediaQuery.of(context).size.height;
     return GestureDetector(
       onTap: onTap,
@@ -520,7 +539,7 @@ class SmallActionButton extends StatelessWidget {
           child: Text(
             title,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.5),
+              color: Colors.white,
             ),
           ),
         ),
@@ -528,9 +547,9 @@ class SmallActionButton extends StatelessWidget {
           vertical: 10,
         ),
         height: height * 0.045,
-        width: width * 0.187,
+        width: width,
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.2),
+          color: kButtonColor,
           borderRadius: BorderRadius.circular(10),
         ),
       ),
@@ -551,56 +570,58 @@ class ModalBottomSheetContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Color(0xff19181e),
+    return SingleChildScrollView(
       child: Container(
-        decoration: BoxDecoration(
-          color: kItemContainerColor,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(15),
-            topRight: Radius.circular(15),
+        color: Color(0xff19181e),
+        child: Container(
+          decoration: BoxDecoration(
+            color: kItemContainerColor,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(15),
+              topRight: Radius.circular(15),
+            ),
           ),
-        ),
-        height: 500,
-        child: Column(
-          children: [
-            SizedBox(
-              height: 20,
-            ),
-            Text(
-              'Add product',
-              style: kHeadingTextStyle,
-            ),
-            SizedBox(
-              height: 20,
-            ),
-            TextFieldWidget(
-              hintText: 'product name',
-              onChanged: onChangedName,
-            ),
-            TextFieldWidget(
-              hintText: 'price',
-              onChanged: onChangedPrice,
-            ),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 30),
-                child: SmallActionButton(
-                  onTap: onTapImage,
-                  title: 'image',
+          height: 500,
+          child: Column(
+            children: [
+              SizedBox(
+                height: 20,
+              ),
+              Text(
+                'Add product',
+                style: kHeadingTextStyle,
+              ),
+              SizedBox(
+                height: 20,
+              ),
+              TextFieldWidget(
+                hintText: 'product name',
+                onChanged: onChangedName,
+              ),
+              TextFieldWidget(
+                hintText: 'price',
+                onChanged: onChangedPrice,
+              ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 30),
+                  child: SmallActionButton(
+                    onTap: onTapImage,
+                    title: 'image',
+                  ),
                 ),
               ),
-            ),
-            SizedBox(
-              height: 20,
-            ),
-            RoundButtonWidget(
-              title: 'add',
-              onTap: onTapAdd,
-              height: 40,
-            ),
-          ],
+              SizedBox(
+                height: 20,
+              ),
+              RoundButtonWidget(
+                title: 'add',
+                onTap: onTapAdd,
+                height: 40,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -608,7 +629,7 @@ class ModalBottomSheetContainer extends StatelessWidget {
 }
 
 class AddOrEditButton extends StatelessWidget {
-  AddOrEditButton({this.onTap, this.title, this.icon});
+  AddOrEditButton({this.onTap, this.title, this.icon = false});
   final Function onTap;
   final String title;
   final bool icon;
@@ -631,6 +652,7 @@ class AddOrEditButton extends StatelessWidget {
                 ? Icon(
                     Icons.add,
                     size: 20,
+                    color: Colors.white,
                   )
                 : Container(),
             SizedBox(
@@ -641,6 +663,7 @@ class AddOrEditButton extends StatelessWidget {
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
+                color: Colors.white,
               ),
             ),
           ],
@@ -652,9 +675,9 @@ class AddOrEditButton extends StatelessWidget {
               spreadRadius: 3,
               blurRadius: 7,
               offset: Offset(0, 5),
-            )
+            ),
           ],
-          color: kItemContainerColor,
+          color: Color(0xffEB3E32),
           borderRadius: BorderRadius.circular(10),
         ),
       ),
@@ -697,7 +720,234 @@ class CustomDrawer extends StatelessWidget {
                 ),
               ),
             ),
-          )
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class CircleTabIndicator extends Decoration {
+  final BoxPainter _painter;
+
+  CircleTabIndicator({@required Color color, @required double radius})
+      : _painter = _CirclePainter(color, radius);
+
+  @override
+  BoxPainter createBoxPainter([onChanged]) => _painter;
+}
+
+class _CirclePainter extends BoxPainter {
+  final Paint _paint;
+  final double radius;
+
+  _CirclePainter(Color color, this.radius)
+      : _paint = Paint()
+          ..color = color
+          ..isAntiAlias = true;
+
+  @override
+  void paint(Canvas canvas, Offset offset, ImageConfiguration cfg) {
+    final Offset circleOffset =
+        offset + Offset(cfg.size.width / 2, cfg.size.height - radius);
+    canvas.drawCircle(circleOffset, radius, _paint);
+  }
+}
+
+class BackGroundDesign extends StatelessWidget {
+  BackGroundDesign({this.width, this.height});
+
+  final double height;
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: height,
+      width: width,
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        image: DecorationImage(
+          fit: BoxFit.cover,
+          image: AssetImage('images/roundDesign2.png'),
+        ),
+      ),
+    );
+  }
+}
+
+class OrderCard extends StatefulWidget {
+  final OrderModel order;
+
+  const OrderCard({
+    Key key,
+    @required this.order,
+  })  : assert(order != null),
+        super(key: key);
+
+  @override
+  _OrderCardState createState() => _OrderCardState();
+}
+
+class _OrderCardState extends State<OrderCard> {
+  @override
+  Widget build(BuildContext context) {
+    var date = widget.order.timeStamp.toDate();
+    final passedDate = DateTime(date.year, date.month, date.day);
+    final purchasedDate = DateFormat('yMMMEd').format(passedDate);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: kBoxContainerColor,
+        borderRadius: BorderRadius.circular(15),
+      ),
+      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      margin: EdgeInsets.all(10),
+      width: 300,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          //Order and date
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.bookmark_border,
+                    color: kButtonColor,
+                  ),
+                  Text(
+                    'Order',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                purchasedDate,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+
+          SizedBox(
+            height: 5,
+          ),
+
+          //User email
+          Row(
+            children: [
+              Text(
+                widget.order.customerEmail,
+                style: kOrderContainerStyle1,
+              ),
+            ],
+          ),
+
+          Divider(),
+
+          //Product name and price
+          ListTile(
+            contentPadding: EdgeInsets.all(0),
+            leading: Text(
+              widget.order.productName,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            trailing: Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 2,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(7),
+              ),
+              child: Text(
+                '\$${widget.order.productPrice}',
+              ),
+            ),
+          ),
+
+          Divider(),
+
+          //Address
+          Row(
+            children: [
+              Icon(
+                Icons.pin_drop,
+                color: kButtonColor,
+                size: 15,
+              ),
+              SizedBox(
+                width: 5,
+              ),
+              Text(
+                '${widget.order.shippingAddress}',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+
+          SizedBox(
+            height: 10,
+          ),
+
+          //Status
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Status',
+                style: TextStyle(
+                  color: Colors.blue,
+                ),
+              ),
+              GestureDetector(
+                onTap: () {
+                  FirebaseFirestore.instance
+                      .collection('orders')
+                      .doc(widget.order.stripTransactionId)
+                      .update({
+                    'completed': !widget.order.isCompleted,
+                  });
+                },
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color:
+                        widget.order.isCompleted ? Colors.green : kButtonColor,
+                    borderRadius: BorderRadius.circular(7),
+                  ),
+                  child: Text(
+                    widget.order.isCompleted ? 'Completed' : 'Not completed',
+                    style: TextStyle(
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              )
+            ],
+          ),
+
+          SizedBox(
+            height: 10,
+          ),
+          Text(
+            widget.order.stripTransactionId,
+            style: kOrderContainerStyle1,
+          ),
         ],
       ),
     );

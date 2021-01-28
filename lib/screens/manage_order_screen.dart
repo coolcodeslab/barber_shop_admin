@@ -1,18 +1,20 @@
+import 'package:barber_shop_admin/barber_widgets.dart';
 import 'package:barber_shop_admin/constants.dart';
-import 'package:barber_shop_admin/models/booking_model.dart';
+import 'package:barber_shop_admin/models/order_model.dart';
+import 'package:barber_shop_admin/provider_data.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:barber_shop_admin/screens/bookings_for_the_day_screen.dart';
-import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
-int bookingCount = 0;
+int orderCount = 0;
 
-class ManageBookingScreen extends StatefulWidget {
+class ManageOrderScreen extends StatefulWidget {
   @override
-  _ManageBookingScreenState createState() => _ManageBookingScreenState();
+  _ManageOrderScreenState createState() => _ManageOrderScreenState();
 }
 
-class _ManageBookingScreenState extends State<ManageBookingScreen>
+class _ManageOrderScreenState extends State<ManageOrderScreen>
     with SingleTickerProviderStateMixin {
   TabController tabController;
   @override
@@ -24,9 +26,9 @@ class _ManageBookingScreenState extends State<ManageBookingScreen>
   @override
   Widget build(BuildContext context) {
     final double height = MediaQuery.of(context).size.height;
-    return Container(
-      color: kBackgroundColor,
-      child: Column(
+    return Scaffold(
+      backgroundColor: kBackgroundColor,
+      body: Column(
         children: [
           SizedBox(
             height: height * 0.03,
@@ -52,7 +54,7 @@ class _ManageBookingScreenState extends State<ManageBookingScreen>
               //Title is passed
               tabs: <Widget>[
                 Tab(
-                  child: Text('upcoming'),
+                  child: Text('pending'),
                 ),
                 Tab(
                   child: Text('completed'),
@@ -68,12 +70,12 @@ class _ManageBookingScreenState extends State<ManageBookingScreen>
             children: [
               //Upcoming screen
               TabBarScreens(
-                completed: false,
+                pending: true,
               ),
 
               //Completed screen
               TabBarScreens(
-                completed: true,
+                pending: false,
               ),
             ],
           ))
@@ -84,34 +86,36 @@ class _ManageBookingScreenState extends State<ManageBookingScreen>
 }
 
 class TabBarScreens extends StatefulWidget {
-  TabBarScreens({this.completed});
+  TabBarScreens({this.pending});
 
-  //Boolean which check if its from completed screen
-  final bool completed;
+  final bool pending;
+
   @override
   _TabBarScreensState createState() => _TabBarScreensState();
 }
 
 class _TabBarScreensState extends State<TabBarScreens> {
   final scrollController = ScrollController();
-  BookingsModel bookings;
+  OrdersModel bookings;
 
   final _fireStore = FirebaseFirestore.instance;
 
   //Gets the date of current day not the time
   DateTime dateToday;
 
+  //calling setState so that the page refreshes
+
   @override
   void initState() {
-    ///My code
-    DateTime dateTime = DateTime.now();
-    dateToday = DateTime(dateTime.year, dateTime.month, dateTime.day);
-
     setState(() {
-      bookingCount = 0;
+      orderCount = 0;
     });
 
-    bookings = BookingsModel(dateTime: dateToday, completed: widget.completed);
+    if (widget.pending) {
+      bookings = OrdersModel(pending: true);
+    } else {
+      bookings = OrdersModel(pending: false);
+    }
 
     scrollController.addListener(() {
       if (scrollController.position.maxScrollExtent ==
@@ -120,11 +124,16 @@ class _TabBarScreensState extends State<TabBarScreens> {
       }
     });
 
+    ///My code
+    DateTime dateTime = DateTime.now();
+    dateToday = DateTime(dateTime.year, dateTime.month, dateTime.day);
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
+    //calling setState the refresh the page
+
     return Container(
       color: kBackgroundColor,
       child: StreamBuilder(
@@ -148,7 +157,7 @@ class _TabBarScreensState extends State<TabBarScreens> {
                 itemCount: _snapshot.data.length + 1,
                 itemBuilder: (BuildContext _context, int index) {
                   if (index < _snapshot.data.length) {
-                    return DateContainer(booking: _snapshot.data[index]);
+                    return OrderCard(order: _snapshot.data[index]);
                   } else if (bookings.hasMore) {
                     return Padding(
                       padding: EdgeInsets.symmetric(vertical: 32.0),
@@ -175,64 +184,66 @@ class _TabBarScreensState extends State<TabBarScreens> {
       ),
     );
   }
-}
 
-class DateContainer extends StatefulWidget {
-  final BookingModel booking;
+  void onTapCompleted({String transactionId}) {
+    final bool isAndroid =
+        Provider.of<ProviderData>(context, listen: false).isAndroid;
 
-  DateContainer({
-    Key key,
-    @required this.booking,
-  })  : assert(booking != null),
-        super(key: key);
-
-  @override
-  _DateContainerState createState() => _DateContainerState();
-}
-
-class _DateContainerState extends State<DateContainer> {
-  final _fireStore = FirebaseFirestore.instance;
-  @override
-  Widget build(BuildContext context) {
-    var dateTime = widget.booking.timeStamp.toDate();
-    final passedDate = DateTime(dateTime.year, dateTime.month, dateTime.day);
-    final bookingDate = DateFormat('yMMMEd').format(passedDate);
-
-    final double width = MediaQuery.of(context).size.width;
-    final double height = MediaQuery.of(context).size.height;
-
-    return GestureDetector(
-      onTap: () {
-        print(widget.booking.docStringDate);
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => BookingsForTheDayScreen(
-              date: widget.booking.docStringDate,
-              day: bookingDate,
-              completed: false,
+    //confirmation dialog box
+    showDialog(
+      context: context,
+      builder: (BuildContext context) => isAndroid
+          ? AlertDialog(
+              title: Text("Order completed"),
+              content: Text(
+                  "Mark this order as completed?you wont be able to change this"),
+              actions: [
+                FlatButton(
+                  child: Text("Cancel"),
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                ),
+                FlatButton(
+                  child: Text("Continue"),
+                  onPressed: () {
+                    completeOrder(transactionId: transactionId);
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
+            )
+          : CupertinoAlertDialog(
+              title: Text("Order completed"),
+              content: Text(
+                  "Mark this order as completed? you wont be able to change this"),
+              actions: <Widget>[
+                CupertinoDialogAction(
+                  isDefaultAction: true,
+                  child: Text("Yes"),
+                  onPressed: () {
+                    completeOrder(transactionId: transactionId);
+                    Navigator.pop(context);
+                  },
+                ),
+                CupertinoDialogAction(
+                  child: Text("No"),
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                )
+              ],
             ),
-          ),
-        );
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: kBoxContainerColor,
-          borderRadius: BorderRadius.circular(15),
-        ),
-        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        margin: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        height: height * 0.15,
-        width: width * 0.667,
-        child: Text(bookingDate,
-            style: kServiceContainerTextStyle.copyWith(
-              fontSize: 20,
-              color: Colors.black.withOpacity(0.5),
-            )),
-      ),
     );
+  }
 
-    ;
+  void completeOrder({String transactionId}) {
+    try {
+      _fireStore.collection('orders').doc(transactionId).update({
+        'completed': true,
+      });
+    } catch (e) {
+      print(e);
+    }
   }
 }

@@ -2,11 +2,15 @@ import 'dart:io';
 
 import 'package:barber_shop_admin/barber_widgets.dart';
 import 'package:barber_shop_admin/constants.dart';
-import 'package:barber_shop_admin/screens/edit_service_screen.dart';
+import 'package:barber_shop_admin/provider_data.dart';
+import 'package:barber_shop_admin/screens/add_or_edit_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:persistent_bottom_nav_bar/persistent-tab-view.dart';
+import 'package:provider/provider.dart';
 import 'package:random_string/random_string.dart';
 
 class ItemScreen extends StatefulWidget {
@@ -44,7 +48,6 @@ class _ItemScreenState extends State<ItemScreen>
 
   @override
   Widget build(BuildContext context) {
-    final double width = MediaQuery.of(context).size.width;
     final double height = MediaQuery.of(context).size.height;
     return Scaffold(
       backgroundColor: kBackgroundColor,
@@ -81,12 +84,12 @@ class _ItemScreenState extends State<ItemScreen>
           Padding(
             padding: EdgeInsets.all(10),
             child: TabBar(
-              indicator: CircleTabIndicator(color: Colors.white, radius: 4),
+              indicator: CircleTabIndicator(color: Colors.black, radius: 4),
               controller: tabController,
               isScrollable: false,
-              indicatorColor: Colors.white,
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.white.withOpacity(0.5),
+              indicatorColor: Colors.black,
+              labelColor: Colors.black,
+              unselectedLabelColor: Colors.black.withOpacity(0.5),
               labelStyle: TextStyle(
                 fontSize: 9,
                 fontWeight: FontWeight.w700,
@@ -191,29 +194,90 @@ class _ItemListState extends State<ItemList> {
   String productPrice;
   String itemDownloadUrl;
 
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      /*Check if the user is from the get started screen and if so it does not
+      show the Floating action button*/
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          pushNewScreen(
+            context,
+            screen: AddOrEditScreen(
+              fromItemScreen: true,
+              action: 'addProduct',
+              collection: widget.category.toLowerCase(),
+              section: widget.section,
+            ),
+            withNavBar: false,
+          );
+        },
+        child: Icon(Icons.add),
+        backgroundColor: kButtonColor,
+      ),
+      body: Stack(
+        children: [
+          Container(
+            padding: EdgeInsets.only(right: 10),
+            color: kBackgroundColor,
+            child: StreamBuilder<QuerySnapshot>(
+              stream: _fireStore
+                  .collection(widget.category.toLowerCase())
+                  .doc(widget.section)
+                  .collection(widget.collection)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return Center(
+                    child: Theme(
+                      data: ThemeData(
+                        accentColor: kButtonColor,
+                      ),
+                      child: CircularProgressIndicator(),
+                    ),
+                  );
+                }
+                final dataLength = snapshot.data.docs.length;
+                final products = snapshot.data.docs;
+                return GridView.count(
+                  crossAxisCount: 3,
+                  childAspectRatio: 80 / 100,
+                  children: List.generate(
+                    dataLength,
+                    (index) {
+                      /*Returns an item container
+
+                      according to the index of the list item in
+                      are taken from the FireStore*/
+                      return ItemContainer(
+                        name: products[index]['product name'],
+                        url: products[index]['imageUrl'],
+                        onTap: () {
+                          onTapItemContainer(
+                            name: products[index]['product name'],
+                            price: products[index]['price'],
+                            productId: products[index]['product id'],
+                            url: products[index]['imageUrl'],
+                          );
+                        },
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void onChangedProductName(n) {
     productName = n;
   }
 
   void onChangedProductPrice(n) {
     productPrice = n;
-  }
-
-  void onTapEdit({String productId, String name, String price, String url}) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EditOrAddScreen(
-          collection: widget.category.toLowerCase(),
-          fromItemScreen: true,
-          productId: productId,
-          section: widget.section,
-          name: name,
-          price: price,
-          imageUrl: url,
-        ),
-      ),
-    );
   }
 
   //When item container is Tapped  a dialog boc with a container pops up
@@ -235,18 +299,84 @@ class _ItemListState extends State<ItemList> {
             name: name,
             price: price,
             url: url,
+            onTapDelete: () {
+              onTapDelete(name: name, productId: productId);
+            },
             onTapEdit: () {
               Navigator.pop(context);
-              onTapEdit(
-                productId: productId,
-                name: name,
-                price: price,
-                url: url,
+              pushNewScreen(
+                context,
+                screen: AddOrEditScreen(
+                  action: 'editProduct',
+                  collection: widget.category.toLowerCase(),
+                  fromItemScreen: true,
+                  productId: productId,
+                  section: widget.section,
+                  name: name,
+                  price: price,
+                  imageUrl: url,
+                ),
+                withNavBar: false,
               );
             },
           ),
         );
       },
+    );
+  }
+
+  void onTapDelete({String name, String productId}) {
+    final bool isAndroid =
+        Provider.of<ProviderData>(context, listen: false).isAndroid;
+    //confirmation dialog box
+    showDialog(
+      context: context,
+      builder: (BuildContext context) => isAndroid
+          ? AlertDialog(
+              title: Text("Delete $name"),
+              content: Text("Are you sure you want to delete $name?"),
+              actions: [
+                FlatButton(
+                  child: Text("Cancel"),
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                ),
+                FlatButton(
+                  child: Text("Continue"),
+                  onPressed: () {
+                    deleteProduct(
+                      productId: productId,
+                    );
+                    Navigator.pop(context);
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
+            )
+          : CupertinoAlertDialog(
+              title: Text("Delete $name"),
+              content: Text("Are you sure you want to delete $name?"),
+              actions: <Widget>[
+                CupertinoDialogAction(
+                  isDefaultAction: true,
+                  child: Text("Yes"),
+                  onPressed: () {
+                    deleteProduct(
+                      productId: productId,
+                    );
+                    Navigator.pop(context);
+                    Navigator.pop(context);
+                  },
+                ),
+                CupertinoDialogAction(
+                  child: Text("No"),
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                )
+              ],
+            ),
     );
   }
 
@@ -322,106 +452,13 @@ class _ItemListState extends State<ItemList> {
 
   /*Removes the relevant item (which is decided by the uid passed) from the
   relevant section list*/
-  void onLongPressItemContainer({String uid}) async {
-    print(uid);
+  void deleteProduct({String productId}) async {
+    print(productId);
     await _fireStore
         .collection(widget.category.toLowerCase())
         .doc(widget.section)
         .collection(widget.collection)
-        .doc(uid)
+        .doc(productId)
         .delete();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final double width = MediaQuery.of(context).size.width;
-    final double height = MediaQuery.of(context).size.height;
-    return Scaffold(
-      /*Check if the user is from the get started screen and if so it does not
-      show the Floating action button*/
-      floatingActionButton: widget.category == 'get started'
-          ? null
-          : FloatingActionButton(
-              onPressed: onPressedPlus,
-              child: Icon(Icons.add),
-              backgroundColor: kButtonColor,
-            ),
-      body: Container(
-        padding: EdgeInsets.only(right: 10),
-        color: kBackgroundColor,
-        child: StreamBuilder<QuerySnapshot>(
-          stream: _fireStore
-              .collection(widget.category.toLowerCase())
-              .doc(widget.section)
-              .collection(widget.collection)
-              .snapshots(),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) {
-              return Center(
-                child: CircularProgressIndicator(),
-              );
-            }
-            final dataLength = snapshot.data.docs.length;
-            final products = snapshot.data.docs;
-            return GridView.count(
-              crossAxisCount: 3,
-              childAspectRatio: 80 / 100,
-              children: List.generate(
-                dataLength,
-                (index) {
-                  /*Returns an item container
-
-                  according to the index of the list item in
-                  are taken from the FireStore*/
-                  return ItemContainer(
-                    name: products[index]['product name'],
-                    url: products[index]['imageUrl'],
-                    onTap: () {
-                      onTapItemContainer(
-                        name: products[index]['product name'],
-                        price: products[index]['price'],
-                        productId: products[index]['product id'],
-                        url: products[index]['imageUrl'],
-                      );
-                    },
-                    //Passes the uid when pressed
-                    onLongPress: () {
-                      onLongPressItemContainer(uid: products[index].id);
-                    },
-                  );
-                },
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
-
-class CircleTabIndicator extends Decoration {
-  final BoxPainter _painter;
-
-  CircleTabIndicator({@required Color color, @required double radius})
-      : _painter = _CirclePainter(color, radius);
-
-  @override
-  BoxPainter createBoxPainter([onChanged]) => _painter;
-}
-
-class _CirclePainter extends BoxPainter {
-  final Paint _paint;
-  final double radius;
-
-  _CirclePainter(Color color, this.radius)
-      : _paint = Paint()
-          ..color = color
-          ..isAntiAlias = true;
-
-  @override
-  void paint(Canvas canvas, Offset offset, ImageConfiguration cfg) {
-    final Offset circleOffset =
-        offset + Offset(cfg.size.width / 2, cfg.size.height - radius);
-    canvas.drawCircle(circleOffset, radius, _paint);
   }
 }

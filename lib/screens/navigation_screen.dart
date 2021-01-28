@@ -1,5 +1,7 @@
 import 'package:barber_shop_admin/constants.dart';
+
 import 'package:barber_shop_admin/screens/home_screen.dart';
+import 'package:barber_shop_admin/screens/manage_order_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:persistent_bottom_nav_bar/persistent-tab-view.dart';
 import 'package:barber_shop_admin/screens/manage_booking_screen.dart';
@@ -23,6 +25,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
   List<Widget> screens = [
     HomeScreen(),
     ManageBookingScreen(),
+    ManageOrderScreen(),
   ];
 
   @override
@@ -37,14 +40,19 @@ class _NavigationScreenState extends State<NavigationScreen> {
         items: [
           PersistentBottomNavBarItem(
             icon: Icon(Icons.home),
-            activeColor: Colors.white,
+            activeColor: Colors.black,
             inactiveColor: Colors.grey,
           ),
           PersistentBottomNavBarItem(
             icon: Icon(Icons.menu),
-            activeColor: Colors.white,
+            activeColor: Colors.black,
             inactiveColor: Colors.grey,
-          )
+          ),
+          PersistentBottomNavBarItem(
+            icon: Icon(Icons.shopping_cart),
+            activeColor: Colors.black,
+            inactiveColor: Colors.grey,
+          ),
         ],
       ),
     );
